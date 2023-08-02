@@ -47,7 +47,7 @@ class Dataset(object):
 
         window_fnames = []
         for frame_id in range(start_id, start_id + syncnet_T):
-            frame = join(vidname, '{}.jpg'.format(frame_id))
+            frame = join(vidname, '{}.png'.format(frame_id))  # '{}.jpg'
             if not isfile(frame):
                 return None
             window_fnames.append(frame)
@@ -71,8 +71,10 @@ class Dataset(object):
             idx = random.randint(0, len(self.all_videos) - 1)
             vidname = self.all_videos[idx]
 
-            img_names = list(glob(join(vidname, '*.jpg')))
+            img_names = list(glob(join(vidname, '*.png')))  # '*.jpg'
+            # print('vidname:', vidname, 'img_names:', len(img_names))
             if len(img_names) <= 3 * syncnet_T:
+                # print('CONTINUE: len(img_names) <= 3 * syncnet_T')
                 continue
             img_name = random.choice(img_names)
             wrong_img_name = random.choice(img_names)
@@ -88,6 +90,7 @@ class Dataset(object):
 
             window_fnames = self.get_window(chosen)
             if window_fnames is None:
+                # print('CONTINUE: window_fnames is None. chosen:', chosen)
                 continue
 
             window = []
@@ -108,16 +111,18 @@ class Dataset(object):
             if not all_read: continue
 
             try:
-                wavpath = join(vidname, "audio.wav")
+                wavpath = join(vidname, "../audio.wav")  # "audio.wav"
                 wav = audio.load_wav(wavpath, hparams.sample_rate)
 
                 orig_mel = audio.melspectrogram(wav).T
             except Exception as e:
+                # print('CONTINUE Exception:', e, ', wavpath:', wavpath, ', wav:', wav)
                 continue
 
             mel = self.crop_audio_window(orig_mel.copy(), img_name)
 
             if (mel.shape[0] != syncnet_mel_step_size):
+                # print('CONTINUE: mel.shape[0] != syncnet_mel_step_size')
                 continue
 
             # H x W x 3 * T
@@ -127,13 +132,22 @@ class Dataset(object):
 
             x = torch.FloatTensor(x)
             mel = torch.FloatTensor(mel.T).unsqueeze(0)
+            
+            # print('x, mel, y:', x, mel, y)
 
             return x, mel, y
 
 logloss = nn.BCELoss()
 def cosine_loss(a, v, y):
+    # print('a:', a.shape, ', v:', v.shape, ', y:', y.shape)
+    # print('a:', torch.isnan(a).any(), ', v:', torch.isnan(v).any(), ', y:', torch.isnan(y).any())
+    # print('a:', torch.isinf(a).any(), ', v:', torch.isinf(v).any(), ', y:', torch.isinf(y).any())
     d = nn.functional.cosine_similarity(a, v)
+    # print('d:', d.shape, torch.isnan(d).any(), d)
+    # print('y:', y.shape, torch.isnan(y).any(), y)
+    d = torch.clamp(d, min=0.0)  # TODO Pytorch.clamp：将小于0的元素修改为0，截断元素的取值空间
     loss = logloss(d.unsqueeze(1), y)
+    # print('loss:', loss)
 
     return loss
 
@@ -147,10 +161,12 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
         running_loss = 0.
         prog_bar = tqdm(enumerate(train_data_loader))
         for step, (x, mel, y) in prog_bar:
+        # for step, (x, mel, y) in enumerate(train_data_loader):
             model.train()
             optimizer.zero_grad()
 
             # Transform data to CUDA device
+            # print('x:', x.shape)
             x = x.to(device)
 
             mel = mel.to(device)
@@ -175,6 +191,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
                     eval_model(test_data_loader, global_step, device, model, checkpoint_dir)
 
             prog_bar.set_description('Loss: {}'.format(running_loss / (step + 1)))
+            # print('Loss: {}'.format(running_loss / (step + 1)))
 
         global_epoch += 1
 
@@ -252,6 +269,8 @@ if __name__ == "__main__":
     # Dataset and Dataloader setup
     train_dataset = Dataset('train')
     test_dataset = Dataset('val')
+    print('train_dataset:', len(train_dataset))
+    print('test_dataset:', len(test_dataset))
 
     train_data_loader = data_utils.DataLoader(
         train_dataset, batch_size=hparams.syncnet_batch_size, shuffle=True,

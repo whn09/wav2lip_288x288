@@ -60,7 +60,7 @@ class Dataset(object):
 
         window_fnames = []
         for frame_id in range(start_id, start_id + syncnet_T):
-            frame = join(vidname, '{}.jpg'.format(frame_id))
+            frame = join(vidname, '{}.png'.format(frame_id))  # '{}.jpg'
             if not isfile(frame):
                 return None
             window_fnames.append(frame)
@@ -122,7 +122,7 @@ class Dataset(object):
         while 1:
             idx = random.randint(0, len(self.all_videos) - 1)
             vidname = self.all_videos[idx]
-            img_names = list(glob(join(vidname, '*.jpg')))
+            img_names = list(glob(join(vidname, '*.png')))  # '*.jpg'
             if len(img_names) <= 3 * syncnet_T:
                 continue
             
@@ -145,7 +145,7 @@ class Dataset(object):
                 continue
 
             try:
-                wavpath = join(vidname, "audio.wav")
+                wavpath = join(vidname, "../audio.wav")
                 wav = audio.load_wav(wavpath, hparams.sample_rate)
 
                 orig_mel = audio.melspectrogram(wav).T
@@ -284,7 +284,7 @@ def train(device, model, disc, train_data_loader, test_data_loader, optimizer, d
 
             running_disc_real_loss += disc_real_loss.item()
             running_disc_fake_loss += disc_fake_loss.item()
-             running_gp += gradient_penalty.item()
+            running_gp += gradient_penalty.item()
             if global_step % checkpoint_interval == 0:
                 save_sample_images(x, g, gt, global_step, checkpoint_dir)
 
@@ -305,7 +305,7 @@ def train(device, model, disc, train_data_loader, test_data_loader, optimizer, d
 
             if global_step == 1 or global_step % checkpoint_interval == 0:
                 save_checkpoint(
-                    model, optimizer, global_step, checkpoint_dir, global_epoch)
+                    model, optimizer, global_step, checkpoint_dir, global_epoch, prefix='wav2lip_')
                 save_checkpoint(disc, disc_optimizer, global_step, checkpoint_dir, global_epoch, prefix='disc_')
 
 
@@ -427,6 +427,8 @@ if __name__ == "__main__":
     # Dataset and Dataloader setup
     train_dataset = Dataset('train')
     test_dataset = Dataset('val')
+    print('train_dataset:', len(train_dataset))
+    print('test_dataset:', len(test_dataset))
 
     train_data_loader = data_utils.DataLoader(
         train_dataset, batch_size=hparams.batch_size, shuffle=True,
