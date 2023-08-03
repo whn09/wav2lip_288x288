@@ -87,9 +87,11 @@ def face_detect(images):
 	results = []
 	pady1, pady2, padx1, padx2 = args.pads
 	for rect, image in zip(predictions, images):
-		if rect is None:
-			cv2.imwrite('temp/faulty_frame.jpg', image) # check this frame where the face was not detected.
-			raise ValueError('Face not detected! Ensure the video contains a face in all the frames.')
+		# # print('image:', image.shape, 'rect:', rect)
+		# if rect is None:
+		# 	cv2.imwrite('temp/faulty_frame.jpg', image) # check this frame where the face was not detected.
+			# raise ValueError('Face not detected! Ensure the video contains a face in all the frames.')  # TODO super resolution may cause false face detection
+		rect = (0, 0, image.shape[1], image.shape[0])
 
 		y1 = max(0, rect[1] - pady1)
 		y2 = min(image.shape[0], rect[3] + pady2)
