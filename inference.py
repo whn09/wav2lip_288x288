@@ -270,7 +270,14 @@ def main():
 			y1, y2, x1, x2 = c
 			p = cv2.resize(p.astype(np.uint8), (x2 - x1, y2 - y1))
 
-			f[y1:y2, x1:x2] = p
+			# f[y1:y2, x1:x2] = p
+			# add SeamlessClone
+			src_mask = 255*np.ones(p.shape, p.dtype)
+			# f[y1:y2, x1:x2] = src_mask
+			# f[y1:y2, x1:x2] = np.zeros(p.shape, p.dtype)
+			center = ((x1+x2)//2, (y1+y2)//2)
+			# print(f.shape, p.shape, y1, y2, x1, x2, center)
+			f = cv2.seamlessClone(p, f, src_mask, center, cv2.NORMAL_CLONE)  # cv2.NORMAL_CLONE, cv2.MIXED_CLONE
 			out.write(f)
 
 	out.release()

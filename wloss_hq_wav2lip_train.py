@@ -60,7 +60,7 @@ class Dataset(object):
 
         window_fnames = []
         for frame_id in range(start_id, start_id + syncnet_T):
-            frame = join(vidname, '{}.png'.format(frame_id))  # '{}.jpg'
+            frame = join(vidname, '{}.jpg'.format(frame_id))  # '{}.jpg' '{}.png'
             if not isfile(frame):
                 return None
             window_fnames.append(frame)
@@ -122,7 +122,7 @@ class Dataset(object):
         while 1:
             idx = random.randint(0, len(self.all_videos) - 1)
             vidname = self.all_videos[idx]
-            img_names = list(glob(join(vidname, '*.png')))  # '*.jpg'
+            img_names = list(glob(join(vidname, '*.jpg')))  # '*.jpg' '*.png'
             if len(img_names) <= 3 * syncnet_T:
                 continue
             
@@ -145,7 +145,7 @@ class Dataset(object):
                 continue
 
             try:
-                wavpath = join(vidname, "../audio.wav")
+                wavpath = join(vidname, "audio.wav")  # "audio.wav" "../audio.wav"
                 wav = audio.load_wav(wavpath, hparams.sample_rate)
 
                 orig_mel = audio.melspectrogram(wav).T
