@@ -1,4 +1,4 @@
-python inference_origin.py \
+python inference.py \
     --checkpoint_path ./savedmodel/wav2lip_checkpoint_step000001000.pth \
     --face ../videos/97.mp4 \
     --audio ../videos/test.wav \
