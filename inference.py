@@ -7,6 +7,7 @@ from glob import glob
 import torch, face_detection
 from models import Wav2Lip
 import platform
+import time
 
 parser = argparse.ArgumentParser(description='Inference code to lip-sync videos in the wild using Wav2Lip models')
 
@@ -160,8 +161,9 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print('Using {} for inference.'.format(device))
 
 def _load(checkpoint_path):
-	if device == 'cuda':
-		checkpoint = torch.load(checkpoint_path)
+	# if device == 'cuda':
+	if 'cuda' in device:
+		checkpoint = torch.load(checkpoint_path, map_location=device)
 	else:
 		checkpoint = torch.load(checkpoint_path,
 								map_location=lambda storage, loc: storage)
@@ -248,6 +250,9 @@ def main():
 	batch_size = args.wav2lip_batch_size
 	gen = datagen(full_frames.copy(), mel_chunks)
 
+	run_time = 0
+	frame_cnt = 0
+
 	for i, (img_batch, mel_batch, frames, coords) in enumerate(tqdm(gen, 
 											total=int(np.ceil(float(len(mel_chunks))/batch_size)))):
 		if i == 0:
@@ -262,7 +267,11 @@ def main():
 		mel_batch = torch.FloatTensor(np.transpose(mel_batch, (0, 3, 1, 2))).to(device)
 
 		with torch.no_grad():
+			start = time.time()
 			pred = model(mel_batch, img_batch)
+			end = time.time()
+			run_time += end-start
+			frame_cnt += len(frames)
 
 		pred = pred.cpu().numpy().transpose(0, 2, 3, 1) * 255.
 		
@@ -270,20 +279,28 @@ def main():
 			y1, y2, x1, x2 = c
 			p = cv2.resize(p.astype(np.uint8), (x2 - x1, y2 - y1))
 
-			# f[y1:y2, x1:x2] = p
-			# add SeamlessClone
-			src_mask = 255*np.ones(p.shape, p.dtype)
-			# f[y1:y2, x1:x2] = src_mask
-			# f[y1:y2, x1:x2] = np.zeros(p.shape, p.dtype)
-			center = ((x1+x2)//2, (y1+y2)//2)
-			# print(f.shape, p.shape, y1, y2, x1, x2, center)
-			f = cv2.seamlessClone(p, f, src_mask, center, cv2.NORMAL_CLONE)  # cv2.NORMAL_CLONE, cv2.MIXED_CLONE
+			f[y1:y2, x1:x2] = p
+
+			# # add SeamlessClone
+			# src_mask = 255*np.ones(p.shape, p.dtype)
+			# # f[y1:y2, x1:x2] = src_mask
+			# # f[y1:y2, x1:x2] = np.zeros(p.shape, p.dtype)
+			# center = ((x1+x2)//2, (y1+y2)//2)
+			# # print(f.shape, p.shape, y1, y2, x1, x2, center)
+			# f = cv2.seamlessClone(p, f, src_mask, center, cv2.NORMAL_CLONE)  # cv2.NORMAL_CLONE, cv2.MIXED_CLONE
+
 			out.write(f)
 
 	out.release()
+	print('run_time:', run_time)
+	print('frame_cnt:', frame_cnt)
+	print('avg_time:', run_time/frame_cnt)
 
 	command = 'ffmpeg -y -i {} -i {} -strict -2 -q:v 1 {}'.format(args.audio, 'temp/result.avi', args.outfile)
 	subprocess.call(command, shell=platform.system() != 'Windows')
 
 if __name__ == '__main__':
+	starttime = time.time()
 	main()
+	endtime = time.time()
+	print('total time:', endtime-starttime)

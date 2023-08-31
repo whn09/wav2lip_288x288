@@ -21,7 +21,7 @@ from sklearn.model_selection import train_test_split
 #         pass
 
 def trained_data_name_format():
-    base_path = "../LSR2/lrs2_preprocessed-demo"
+    base_path = "../LSR2/lrs2_preprocessed_288x288"
     # result = list(glob("{}/*".format(base_path)))
     result = os.listdir(base_path)
     # print(result)
