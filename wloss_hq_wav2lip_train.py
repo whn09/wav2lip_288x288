@@ -60,7 +60,7 @@ class Dataset(object):
 
         window_fnames = []
         for frame_id in range(start_id, start_id + syncnet_T):
-            frame = join(vidname, '{}.jpg'.format(frame_id))  # '{}.jpg' '{}.png'
+            frame = join(vidname, '{}.jpg'.format(frame_id))
             if not isfile(frame):
                 return None
             window_fnames.append(frame)
@@ -122,7 +122,7 @@ class Dataset(object):
         while 1:
             idx = random.randint(0, len(self.all_videos) - 1)
             vidname = self.all_videos[idx]
-            img_names = list(glob(join(vidname, '*.jpg')))  # '*.jpg' '*.png'
+            img_names = list(glob(join(vidname, '*.jpg')))
             if len(img_names) <= 3 * syncnet_T:
                 continue
             
@@ -145,7 +145,7 @@ class Dataset(object):
                 continue
 
             try:
-                wavpath = join(vidname, "audio.wav")  # "audio.wav" "../audio.wav"
+                wavpath = join(vidname, "audio.wav")
                 wav = audio.load_wav(wavpath, hparams.sample_rate)
 
                 orig_mel = audio.melspectrogram(wav).T
@@ -189,11 +189,14 @@ def save_sample_images(x, g, gt, global_step, checkpoint_dir):
 logloss = nn.BCELoss()
 def cosine_loss(a, v, y):
     d = nn.functional.cosine_similarity(a, v)
+    # print('before d:', d)
+    # d = torch.clamp(d, min=0.0, max=1.0)  # TODO Pytorch.clamp：将小于0的元素修改为0，截断元素的取值空间
+    # print('after d:', d)
     loss = logloss(d.unsqueeze(1), y)
 
     return loss
 
-device = torch.device("cuda" if use_cuda else "cpu")
+device = torch.device("cuda" if use_cuda else "cpu")  # TODO change cuda device_id
 syncnet = SyncNet().to(device)
 for p in syncnet.parameters():
     p.requires_grad = False
