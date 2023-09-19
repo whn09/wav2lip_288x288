@@ -278,7 +278,7 @@ def train(device, model, disc, train_data_loader, test_data_loader, optimizer, d
 
             if global_step == 1 or global_step % checkpoint_interval == 0:
                 save_checkpoint(
-                    model, optimizer, global_step, checkpoint_dir, global_epoch)
+                    model, optimizer, global_step, checkpoint_dir, global_epoch, prefix='wav2lip_')
                 save_checkpoint(disc, disc_optimizer, global_step, checkpoint_dir, global_epoch, prefix='disc_')
 
 
@@ -400,6 +400,8 @@ if __name__ == "__main__":
     # Dataset and Dataloader setup
     train_dataset = Dataset('train')
     test_dataset = Dataset('val')
+    print('train_dataset:', len(train_dataset))
+    print('test_dataset:', len(test_dataset))
 
     train_data_loader = data_utils.DataLoader(
         train_dataset, batch_size=hparams.batch_size, shuffle=True,
