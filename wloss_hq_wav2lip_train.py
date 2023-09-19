@@ -208,6 +208,8 @@ def get_sync_loss(mel, g):
     # B, 3 * T, H//2, W
     a, v = syncnet(mel, g)
     y = torch.ones(g.size(0), 1).float().to(device)
+    a = torch.clamp(a, min=0.0, max=1.0)  # TODO Pytorch.clamp：将小于0的元素修改为0，截断元素的取值空间
+    v = torch.clamp(v, min=0.0, max=1.0)  # TODO Pytorch.clamp：将小于0的元素修改为0，截断元素的取值空间
     return cosine_loss(a, v, y)
 
 def train(device, model, disc, train_data_loader, test_data_loader, optimizer, disc_optimizer,
