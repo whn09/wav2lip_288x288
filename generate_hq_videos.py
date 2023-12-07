@@ -1,10 +1,15 @@
 import os
+import argparse
 import shutil
 from tqdm import tqdm
 from multiprocessing import Pool
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--data_root", help="Root folder of the LRS2 dataset", required=True)
+args = parser.parse_args()
+
 codeformer_cmd = 'cd ../CodeFormer && python inference_codeformer.py --bg_upsampler realesrgan --face_upsample -w 1.0 -s 1 --input_path {} --output_path {}'
-base_dir = '../LSR2/main'
+base_dir = args.data_root  # '../LSR2/main'
 sub_dirs = os.listdir(base_dir)
 
 cmds = []
@@ -12,6 +17,7 @@ cmds = []
 def execute_cmd(cmd):
     os.system(cmd[0])
     shutil.copy(cmd[1][0], cmd[1][1])
+    os.system('rm -rf '+cmd[2])
 
 for sub_dir in sub_dirs:
     sub_dir = os.path.join(base_dir, sub_dir)
@@ -24,7 +30,7 @@ for sub_dir in sub_dirs:
             # print(codeformer_cmd.format(full_filename, new_dirname))
             # print(os.path.join(new_dirname, filename), new_filename)
             if not os.path.exists(new_filename):
-                cmds.append((codeformer_cmd.format(full_filename, new_dirname), (os.path.join(new_dirname, filename), new_filename)))
+                cmds.append((codeformer_cmd.format(full_filename, new_dirname), (os.path.join(new_dirname, filename), new_filename), new_dirname))
                 # os.system(codeformer_cmd.format(full_filename, new_dirname))
                 # shutil.copy(os.path.join(new_dirname, filename), new_filename)
 

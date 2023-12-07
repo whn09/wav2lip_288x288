@@ -1,9 +1,13 @@
 import time
+import argparse
 from glob import glob
 import shutil,os
  
 from sklearn.model_selection import train_test_split
  
+parser = argparse.ArgumentParser()
+parser.add_argument("--data_root", help="Root folder of the LRS2 dataset", required=True)
+args = parser.parse_args()
 
 # 去除名字的特殊符号，统一序号视频文件命名
  
@@ -21,7 +25,7 @@ from sklearn.model_selection import train_test_split
 #         pass
 
 def trained_data_name_format():
-    base_path = "../LSR2/lrs2_preprocessed_288x288"
+    base_path = args.data_root  # "../LSR2/lrs2_preprocessed_288x288"
     # result = list(glob("{}/*".format(base_path)))
     result = os.listdir(base_path)
     # print(result)
