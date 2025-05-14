@@ -41,7 +41,6 @@ class Wav2Lip_SAM(nn.Module):
             Conv2d(16, 16, kernel_size=3, stride=1, padding=1, residual=True),
             Conv2d(16, 16, kernel_size=3, stride=1, padding=1, residual=True),
             Conv2d(16, 16, kernel_size=3, stride=1, padding=1, residual=True)), # 192, 192
-            # nn.Sequential(Conv2d(3, 16, kernel_size=7, stride=1, padding=3)), # 192, 192
 
             nn.Sequential(Conv2d(16, 32, kernel_size=3, stride=2, padding=1), # 96, 96
             Conv2d(32, 32, kernel_size=3, stride=1, padding=1, residual=True),
@@ -68,10 +67,6 @@ class Wav2Lip_SAM(nn.Module):
             Conv2d(512, 512, kernel_size=3, stride=1, padding=1, residual=True),
             Conv2d(512, 512, kernel_size=3, stride=1, padding=1, residual=True)),
 
-
-            ###################
-            # Modified blocks
-            ##################
             nn.Sequential(Conv2d(512, 1024, kernel_size=3, stride=2, padding=1),       # 3, 3
             Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1, residual=True),
             Conv2d(1024, 1024, kernel_size=3, stride=1, padding=1, residual=True),
@@ -114,11 +109,11 @@ class Wav2Lip_SAM(nn.Module):
         else:
             self.audio_encoder = audio_encoder
 
-        for p in self.audio_encoder.parameters():
-            p.requires_grad = False
-        self.audio_refine = nn.Sequential(
-            Conv2d(1024, 1024, kernel_size=1, stride=1, padding=0),
-            Conv2d(1024, 1024, kernel_size=1, stride=1, padding=0))
+            for p in self.audio_encoder.parameters():
+                p.requires_grad = False
+            self.audio_refine = nn.Sequential(
+                Conv2d(1024, 1024, kernel_size=1, stride=1, padding=0),
+                Conv2d(1024, 1024, kernel_size=1, stride=1, padding=0))
 
         self.face_decoder_blocks = nn.ModuleList([
             nn.Sequential(Conv2d(1024, 1024, kernel_size=1, stride=1, padding=0),),  # + 1024
@@ -156,31 +151,13 @@ class Wav2Lip_SAM(nn.Module):
 
         self.output_block = nn.Sequential(Conv2d(80, 32, kernel_size=3, stride=1, padding=1),
             nn.Conv2d(32, 3, kernel_size=1, stride=1, padding=0),
-            nn.Tanh())
+            nn.Sigmoid())
 
     def freeze_audio_encoder(self):
         for p in self.audio_encoder.parameters():
             p.requires_grad = False
 
-    def new_refine(self):
-        self.audio_refine = nn.Sequential(
-            nn.Linear(1024, 1024),
-            nn.LeakyReLU(),
-            nn.Linear(1024, 1024),
-            nn.LeakyReLU(),
-            nn.Linear(1024, 1024),
-            nn.Tanh())
-
-    def forward(self, audio_sequences, face_sequences, noise=False):
-        if noise:
-            return self.forward_with_noise(audio_sequences, face_sequences)
-        # audio_sequences = (B, T, 1, 80, 16)
-        # B = audio_sequences.size(0)
-
-        # input_dim_size = len(face_sequences.size())
-        # if input_dim_size > 4:
-        #     face_sequences = torch.cat([face_sequences[:, :, i] for i in range(face_sequences.size(2))], dim=0)
-
+    def forward(self, audio_sequences, face_sequences):
 
         B = audio_sequences.size(0)
 
@@ -301,11 +278,11 @@ class Wav2Lip_384(nn.Module):
         else:
             self.audio_encoder = audio_encoder
 
-        for p in self.audio_encoder.parameters():
-            p.requires_grad = False
-        self.audio_refine = nn.Sequential(
-            Conv2d(1024, 1024, kernel_size=1, stride=1, padding=0),
-            Conv2d(1024, 1024, kernel_size=1, stride=1, padding=0))
+            for p in self.audio_encoder.parameters():
+                p.requires_grad = False
+            self.audio_refine = nn.Sequential(
+                Conv2d(1024, 1024, kernel_size=1, stride=1, padding=0),
+                Conv2d(1024, 1024, kernel_size=1, stride=1, padding=0))
 
         self.face_decoder_blocks = nn.ModuleList([
             nn.Sequential(Conv2d(1024, 1024, kernel_size=1, stride=1, padding=0),),  # + 1024
@@ -379,7 +356,6 @@ class Wav2Lip_384(nn.Module):
         x = audio_embedding
         cnt = 0
         for f in self.face_decoder_blocks:
-            print(f"cnt: {cnt}")
             x = f(x)
             try:
                 if self.is_sam:
